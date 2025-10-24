@@ -10,12 +10,24 @@ connectDB();
 
 const app = express();
 
-// Enable CORS for your frontend
-app.use(cors({
-  origin: process.env.BASE_URL || "https://birthdayfront.vercel.app",
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true
-}));
+// ✅ Explicit CORS configuration
+const allowedOrigins = [
+  "https://birthdayfront.vercel.app", // frontend on Vercel
+  "http://localhost:5173" // local dev
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed for this origin"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "50mb" }));
 
@@ -25,8 +37,8 @@ app.get("/", (req, res) => {
 
 app.use("/api", projectRoutes);
 
-// Start scheduler (for tasks like sending emails on schedule)
-startScheduler();
-
-// Export the app for Vercel serverless deployment
-export default app;
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  startScheduler();
+});
